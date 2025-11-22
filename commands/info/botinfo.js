@@ -97,7 +97,7 @@ module.exports = {
 
     const sourceCodeButton = new ButtonBuilder()
       .setLabel('Source Code')
-      .setURL('https://github.com/gaurav87565/Lanya-2.0')
+      .setURL('https://github.com/birajrai/lanya-remastered')
       .setStyle(ButtonStyle.Link);
 
     const row = new ActionRowBuilder().addComponents(sourceCodeButton);
