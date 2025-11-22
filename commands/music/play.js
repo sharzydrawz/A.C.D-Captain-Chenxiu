@@ -2,6 +2,18 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const { formatTime } = require('../../utils/utils');
 
 const autocompleteMap = new Map();
+const AUTOCOMPLETE_CACHE_TTL = 30000; // 30 seconds cache
+const AUTOCOMPLETE_TIMEOUT = 2500; // 2.5 seconds max for autocomplete
+
+// Clean up old cache entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of autocompleteMap.entries()) {
+    if (now - value.timestamp > AUTOCOMPLETE_CACHE_TTL) {
+      autocompleteMap.delete(key);
+    }
+  }
+}, 60000); // Clean every minute
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -29,19 +41,43 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
+    const startTime = Date.now();
+    let responded = false;
+
+    // Helper function to safely respond
+    const safeRespond = async (options) => {
+      if (responded) return;
+      if (Date.now() - startTime > AUTOCOMPLETE_TIMEOUT) {
+        console.warn('Autocomplete timeout - skipping response');
+        return;
+      }
+      try {
+        responded = true;
+        await interaction.respond(options);
+      } catch (error) {
+        if (error.code !== 10062) {
+          throw error;
+        }
+        // Silently ignore "Unknown interaction" errors
+      }
+    };
+
     try {
       const query = interaction.options.getFocused();
       const member = interaction.member;
+
+      // Quick validation checks
       if (!member.voice.channel) {
-        return await interaction.respond([
+        return await safeRespond([
           {
             name: '⚠️ Join a voice channel first!',
             value: 'join_vc',
           },
         ]);
       }
+
       if (!query.trim()) {
-        return await interaction.respond([
+        return await safeRespond([
           {
             name: 'Start typing to search for songs...',
             value: 'start_typing',
@@ -49,52 +85,83 @@ module.exports = {
         ]);
       }
 
+      // Check cache first
+      const cacheKey = `${query.toLowerCase().trim()}`;
+      const cached = autocompleteMap.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < AUTOCOMPLETE_CACHE_TTL) {
+        return await safeRespond(cached.options);
+      }
+
       const source = 'spsearch';
 
-      player = interaction.client.lavalink.createPlayer({
-        guildId: interaction.guildId,
-        textChannelId: interaction.channelId,
-        voiceChannelId: interaction.member.voice.channel.id,
-        selfDeaf: true,
-      });
+      // Get or create player
+      let player = interaction.client.lavalink.players.get(interaction.guildId);
+      if (!player) {
+        player = interaction.client.lavalink.createPlayer({
+          guildId: interaction.guildId,
+          textChannelId: interaction.channelId,
+          voiceChannelId: member.voice.channel.id,
+          selfDeaf: true,
+        });
+      }
 
+      // Race between search and timeout
+      const searchPromise = player.search({ query, source });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Search timeout')), AUTOCOMPLETE_TIMEOUT)
+      );
+
+      let results;
       try {
-        const results = await player.search({ query, source });
-
-        if (!results?.tracks?.length) {
-          return await interaction.respond([
-            { name: 'No results found', value: 'no_results' },
-          ]);
-        }
-
-        let options = [];
-
-        if (results.loadType === 'playlist') {
-          options = [
-            {
-              name: `📑 Playlist: ${results.playlist?.title || 'Unknown'} (${results.tracks.length} tracks)`,
-              value: `${query}`,
-            },
-          ];
-        } else {
-          options = results.tracks.slice(0, 25).map((track) => ({
-            name: `${track.info.title} - ${track.info.author}`,
-            value: track.info.uri,
-          }));
-        }
-
-        return await interaction.respond(options);
-      } catch (searchError) {
-        console.error('Search error:', searchError);
-        return await interaction.respond([
-          { name: 'Error searching for tracks', value: 'error' },
+        results = await Promise.race([searchPromise, timeoutPromise]);
+      } catch (timeoutError) {
+        console.warn('Search timed out for autocomplete');
+        return await safeRespond([
+          { name: 'Search taking too long, try again...', value: 'timeout' },
         ]);
       }
+
+      if (!results?.tracks?.length) {
+        return await safeRespond([
+          { name: 'No results found', value: 'no_results' },
+        ]);
+      }
+
+      let options = [];
+
+      if (results.loadType === 'playlist') {
+        options = [
+          {
+            name: `📑 Playlist: ${results.playlist?.title || 'Unknown'} (${results.tracks.length} tracks)`.substring(0, 100),
+            value: query,
+          },
+        ];
+      } else {
+        options = results.tracks.slice(0, 25).map((track) => ({
+          name: `${track.info.title} - ${track.info.author}`.substring(0, 100),
+          value: track.info.uri,
+        }));
+      }
+
+      // Cache the results
+      autocompleteMap.set(cacheKey, {
+        options,
+        timestamp: Date.now(),
+      });
+
+      return await safeRespond(options);
     } catch (error) {
       console.error('Autocomplete error:', error);
-      return await interaction.respond([
-        { name: 'An error occurred', value: 'error' },
-      ]);
+      // Only try to respond if we haven't already and it's not a timeout
+      if (!responded && error.code !== 10062) {
+        try {
+          await safeRespond([
+            { name: 'An error occurred', value: 'error' },
+          ]);
+        } catch (e) {
+          // Ignore any errors from the error handler
+        }
+      }
     }
   },
 
@@ -104,7 +171,7 @@ module.exports = {
     const member = interaction.member;
     const source = interaction.options.getString('source') || 'spsearch';
 
-    if (query === 'join_vc' || query === 'start_typing' || query === 'error') {
+    if (query === 'join_vc' || query === 'start_typing' || query === 'error' || query === 'timeout') {
       return interaction.reply({
         content: '❌ Please join a voice channel and select a valid song!',
         ephemeral: true,
@@ -169,8 +236,8 @@ module.exports = {
         .setThumbnail(search.tracks[0].info.artworkUrl)
         .setDescription(
           `Added \`${search.tracks.length}\` tracks from playlist\n\n` +
-            `**First Track:** [${search.tracks[0].info.title}](${search.tracks[0].info.uri})\n` +
-            `**Last Track:** [${search.tracks[search.tracks.length - 1].info.title}](${search.tracks[search.tracks.length - 1].info.uri})`
+          `**First Track:** [${search.tracks[0].info.title}](${search.tracks[0].info.uri})\n` +
+          `**Last Track:** [${search.tracks[search.tracks.length - 1].info.title}](${search.tracks[search.tracks.length - 1].info.uri})`
         )
         .addFields([
           {

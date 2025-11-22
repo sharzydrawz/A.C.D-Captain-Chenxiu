@@ -15,18 +15,24 @@ module.exports = {
       try {
         await command.execute(interaction);
       } catch (error) {
-        console.error(error);
+        console.error(`Error executing command ${interaction.commandName}:`, error);
 
-        if (interaction.replied || interaction.deferred) {
-          await interaction.followUp({
+        try {
+          const errorMessage = {
             content: 'There was an error while executing this command!',
             flags: [MessageFlags.Ephemeral],
-          });
-        } else {
-          await interaction.reply({
-            content: 'There was an error while executing this command!',
-            flags: [MessageFlags.Ephemeral],
-          });
+          };
+
+          if (interaction.replied || interaction.deferred) {
+            await interaction.followUp(errorMessage);
+          } else {
+            await interaction.reply(errorMessage);
+          }
+        } catch (replyError) {
+          // If we can't send an error message, log it
+          if (replyError.code !== 10062) {
+            console.error('Failed to send error message:', replyError);
+          }
         }
       }
     }
@@ -38,7 +44,18 @@ module.exports = {
           await command.autocomplete(interaction);
         } catch (error) {
           console.error('Autocomplete error:', error);
-          await interaction.respond([]);
+          // Only try to respond if the interaction hasn't expired
+          // Discord autocomplete interactions expire after 3 seconds
+          if (error.code !== 10062) {
+            try {
+              await interaction.respond([]);
+            } catch (respondError) {
+              // Interaction already expired, ignore
+              if (respondError.code !== 10062) {
+                console.error('Discord.js Error:', respondError);
+              }
+            }
+          }
         }
       }
     }

@@ -26,15 +26,22 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focusedValue = interaction.options.getFocused().trim();
-    const commandNames = [...interaction.client.commands.keys()];
+    try {
+      const focusedValue = interaction.options.getFocused().trim();
+      const commandNames = [...interaction.client.commands.keys()];
 
-    const filtered = commandNames
-      .filter((name) => name.startsWith(focusedValue))
-      .slice(0, 10)
-      .map((name) => ({ name, value: name }));
+      const filtered = commandNames
+        .filter((name) => name.startsWith(focusedValue))
+        .slice(0, 25)
+        .map((name) => ({ name, value: name }));
 
-    await interaction.respond(filtered);
+      await interaction.respond(filtered.length ? filtered : [{ name: 'No commands found', value: 'none' }]);
+    } catch (error) {
+      // Silently ignore "Unknown interaction" errors
+      if (error.code !== 10062) {
+        console.error('Help autocomplete error:', error);
+      }
+    }
   },
 
   async execute(interaction) {
@@ -95,6 +102,14 @@ module.exports = {
     }
 
     if (commandName) {
+      // Handle autocomplete placeholder values
+      if (commandName === 'none') {
+        return interaction.reply({
+          content: '❌ Please select a valid command from the autocomplete list.',
+          ephemeral: true,
+        });
+      }
+
       const command = client.commands.get(commandName);
       if (!command) {
         return interaction.reply({
@@ -112,25 +127,29 @@ module.exports = {
               `\`/${command.data.name}\`` +
               (command.data.options?.length
                 ? ' ' +
-                  command.data.options.map((opt) => `<${opt.name}>`).join(' ')
+                command.data.options
+                  .filter((opt) => opt.type !== 1) // Filter out subcommands (type 1)
+                  .map((opt) => `<${opt.name}>`)
+                  .join(' ')
                 : ''),
           },
           {
             name: 'ℹ️ Details',
             value: `${command.data.description}`,
           },
-          ...(command.data.options?.length
+          ...(command.data.options?.filter((opt) => opt.type !== 1).length
             ? [
-                {
-                  name: 'Options',
-                  value: command.data.options
-                    .map(
-                      (opt) =>
-                        `• \`${opt.name}\`: ${opt.description || 'No description.'}`
-                    )
-                    .join('\n'),
-                },
-              ]
+              {
+                name: 'Options',
+                value: command.data.options
+                  .filter((opt) => opt.type !== 1) // Filter out subcommands
+                  .map(
+                    (opt) =>
+                      `• \`${opt.name}\`: ${opt.description || 'No description.'}`
+                  )
+                  .join('\n'),
+              },
+            ]
             : [])
         );
       return interaction.reply({ embeds: [helpEmbed] });

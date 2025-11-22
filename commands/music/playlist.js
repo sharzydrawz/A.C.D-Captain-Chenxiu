@@ -125,48 +125,88 @@ module.exports = {
     ),
 
   async autocomplete(interaction) {
-    const focused = interaction.options.getFocused(true);
-    const subcommand = interaction.options.getSubcommand();
+    const startTime = Date.now();
+    let responded = false;
+    const AUTOCOMPLETE_TIMEOUT = 2500;
 
-    if (focused.name === 'name') {
-      const playlists = await Playlist.find({
-        userId: interaction.user.id,
-      });
-      return await interaction.respond(
-        playlists
-          .filter((p) =>
-            p.name.toLowerCase().includes(focused.value.toLowerCase())
-          )
-          .map((p) => ({
-            name: `${p.name} (${p.tracks.length} tracks)`,
-            value: p.name,
-          }))
-      );
-    }
+    // Helper function to safely respond
+    const safeRespond = async (options) => {
+      if (responded) return;
+      if (Date.now() - startTime > AUTOCOMPLETE_TIMEOUT) {
+        console.warn('Playlist autocomplete timeout - skipping response');
+        return;
+      }
+      try {
+        responded = true;
+        await interaction.respond(options);
+      } catch (error) {
+        if (error.code !== 10062) {
+          throw error;
+        }
+        // Silently ignore "Unknown interaction" errors
+      }
+    };
 
-    if (subcommand === 'add' && focused.name === 'query') {
-      if (!focused.value.trim()) {
-        return await interaction.respond([
-          {
-            name: 'Start typing to search for songs...',
-            value: 'start_typing',
-          },
-        ]);
+    try {
+      const focused = interaction.options.getFocused(true);
+      const subcommand = interaction.options.getSubcommand();
+
+      if (focused.name === 'name') {
+        const playlists = await Playlist.find({
+          userId: interaction.user.id,
+        });
+        return await safeRespond(
+          playlists
+            .filter((p) =>
+              p.name.toLowerCase().includes(focused.value.toLowerCase())
+            )
+            .slice(0, 25)
+            .map((p) => ({
+              name: `${p.name} (${p.tracks.length} tracks)`.substring(0, 100),
+              value: p.name,
+            }))
+        );
       }
 
-      const player = interaction.client.lavalink.createPlayer({
-        guildId: interaction.guildId,
-        textChannelId: interaction.channelId,
-      });
+      if (subcommand === 'add' && focused.name === 'query') {
+        if (!focused.value.trim()) {
+          return await safeRespond([
+            {
+              name: 'Start typing to search for songs...',
+              value: 'start_typing',
+            },
+          ]);
+        }
 
-      try {
-        const results = await player.search({
+        let player = interaction.client.lavalink.players.get(interaction.guildId);
+        if (!player) {
+          player = interaction.client.lavalink.createPlayer({
+            guildId: interaction.guildId,
+            textChannelId: interaction.channelId,
+          });
+        }
+
+        // Race between search and timeout
+        const searchPromise = player.search({
           query: focused.value,
           source: 'spsearch',
         });
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Search timeout')), AUTOCOMPLETE_TIMEOUT)
+        );
+
+        let results;
+        try {
+          results = await Promise.race([searchPromise, timeoutPromise]);
+        } catch (timeoutError) {
+          console.warn('Playlist search timed out for autocomplete');
+          return await safeRespond([
+            { name: 'Search taking too long, try again...', value: 'timeout' },
+          ]);
+        }
 
         if (!results?.tracks?.length) {
-          return await interaction.respond([
+          return await safeRespond([
             {
               name: 'No results found',
               value: 'no_results',
@@ -178,25 +218,33 @@ module.exports = {
         if (results.loadType === 'playlist') {
           options = [
             {
-              name: `📑 Playlist: ${results.playlist?.title || 'Unknown'} (${results.tracks.length} tracks)`,
+              name: `📑 Playlist: ${results.playlist?.title || 'Unknown'} (${results.tracks.length} tracks)`.substring(0, 100),
               value: focused.value,
             },
           ];
         } else {
           options = results.tracks.slice(0, 25).map((track) => ({
-            name: `${track.info.title} - ${track.info.author}`,
+            name: `${track.info.title} - ${track.info.author}`.substring(0, 100),
             value: track.info.uri,
           }));
         }
 
-        return await interaction.respond(options);
-      } catch (error) {
-        return await interaction.respond([
-          {
-            name: 'Error searching tracks',
-            value: 'error',
-          },
-        ]);
+        return await safeRespond(options);
+      }
+    } catch (error) {
+      console.error('Playlist autocomplete error:', error);
+      // Only try to respond if we haven't already and it's not a timeout
+      if (!responded && error.code !== 10062) {
+        try {
+          await safeRespond([
+            {
+              name: 'Error searching tracks',
+              value: 'error',
+            },
+          ]);
+        } catch (e) {
+          // Ignore any errors from the error handler
+        }
       }
     }
   },
@@ -588,12 +636,12 @@ module.exports = {
               .setDescription(
                 tracks.length
                   ? tracks
-                      .map(
-                        (track, i) =>
-                          `\`${start + i + 1}.\` [${track.title}](${track.uri})\n` +
-                          `┗ 👤 \`${track.author}\` • ⌛ \`${formatTime(track.duration)}\``
-                      )
-                      .join('\n\n')
+                    .map(
+                      (track, i) =>
+                        `\`${start + i + 1}.\` [${track.title}](${track.uri})\n` +
+                        `┗ 👤 \`${track.author}\` • ⌛ \`${formatTime(track.duration)}\``
+                    )
+                    .join('\n\n')
                   : 'No tracks in this playlist'
               )
               .addFields([
