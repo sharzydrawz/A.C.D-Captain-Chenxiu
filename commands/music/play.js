@@ -215,6 +215,7 @@ module.exports = {
 
     await interaction.deferReply();
 
+    let search;
     if (query.startsWith('playlist_')) {
       const actualQuery = query.replace('playlist_', '');
       search = await player.search({ query: actualQuery, source });

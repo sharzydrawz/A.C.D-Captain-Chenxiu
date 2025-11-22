@@ -215,10 +215,21 @@ module.exports = {
       });
     } catch (error) {
       console.error('Search command error:', error);
-      return interaction.editReply({
+
+      const errorMessage = {
         content: '❌ An error occurred while processing your request.',
         ephemeral: true,
-      });
+      };
+
+      try {
+        if (interaction.deferred || interaction.replied) {
+          return await interaction.editReply(errorMessage);
+        } else {
+          return await interaction.reply(errorMessage);
+        }
+      } catch (replyError) {
+        console.error('Failed to send error message:', replyError);
+      }
     }
   },
 };
