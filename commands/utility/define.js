@@ -21,15 +21,19 @@ module.exports = {
       );
 
       if (!response.ok) {
-        return await interaction.reply(
-          'Could not find the definition. Please check the word and try again.'
-        );
+        return await interaction.reply({
+          content: '❌ Could not find the definition. Please check the word and try again.',
+          ephemeral: true,
+        });
       }
 
       const data = await response.json();
 
       if (!data || data.length === 0) {
-        return await interaction.reply('No definition found for that word.');
+        return await interaction.reply({
+          content: '❌ No definition found for that word.',
+          ephemeral: true,
+        });
       }
 
       const definitions = data[0].meanings[0].definitions;
@@ -48,9 +52,21 @@ module.exports = {
       await interaction.reply({ embeds: [definitionEmbed] });
     } catch (error) {
       console.error('Error fetching definition:', error);
-      await interaction.reply(
-        'An error occurred while fetching the definition. Please try again later.'
-      );
+
+      const errorMessage = {
+        content: '❌ An error occurred while fetching the definition. Please try again later.',
+        ephemeral: true,
+      };
+
+      try {
+        if (interaction.deferred || interaction.replied) {
+          await interaction.editReply(errorMessage);
+        } else {
+          await interaction.reply(errorMessage);
+        }
+      } catch (replyError) {
+        console.error('Failed to send error message:', replyError);
+      }
     }
   },
 };
