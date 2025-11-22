@@ -4,6 +4,7 @@ const { formatTime } = require('../../utils/utils');
 const autocompleteMap = new Map();
 const AUTOCOMPLETE_CACHE_TTL = 30000; // 30 seconds cache
 const AUTOCOMPLETE_TIMEOUT = 2500; // 2.5 seconds max for autocomplete
+const MAX_CACHE_SIZE = 100; // Maximum number of cached entries
 
 // Clean up old cache entries periodically
 setInterval(() => {
@@ -13,7 +14,16 @@ setInterval(() => {
       autocompleteMap.delete(key);
     }
   }
+
+  // If cache is still too large, remove oldest entries
+  if (autocompleteMap.size > MAX_CACHE_SIZE) {
+    const entries = Array.from(autocompleteMap.entries());
+    entries.sort((a, b) => a[1].timestamp - b[1].timestamp);
+    const toRemove = entries.slice(0, autocompleteMap.size - MAX_CACHE_SIZE);
+    toRemove.forEach(([key]) => autocompleteMap.delete(key));
+  }
 }, 60000); // Clean every minute
+
 
 module.exports = {
   data: new SlashCommandBuilder()

@@ -1,4 +1,12 @@
+require('dotenv').config();
 const express = require('express');
+const { Client, GatewayIntentBits } = require('discord.js');
+const { LavalinkManager } = require('lavalink-client');
+const fs = require('fs');
+const path = require('path');
+const chalk = require('chalk');
+const { autoPlayFunction } = require('./functions/autoPlay');
+
 const app = express();
 
 app.get('/', (req, res) => {
@@ -8,13 +16,7 @@ app.get('/', (req, res) => {
 app.listen(10000, () => {
   console.log('✅ Express server running on http://localhost:10000');
 });
-require('dotenv').config();
-const { Client, GatewayIntentBits } = require('discord.js');
-const { LavalinkManager } = require('lavalink-client');
-const fs = require('fs');
-const path = require('path');
-const chalk = require('chalk');
-const { autoPlayFunction } = require('./functions/autoPlay');
+
 
 const client = new Client({
   intents: [

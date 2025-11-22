@@ -4,6 +4,8 @@ const serverStatusUpdater = require('../../functions/serverStatusUpdater');
 const updateStatus = require('../../functions/statusRotation');
 const fs = require('fs');
 const path = require('path');
+const packageJson = require('../../package.json');
+
 
 module.exports = {
   name: Events.ClientReady,
@@ -58,7 +60,7 @@ module.exports = {
       `${global.styles.infoColor('⏰ Started At     :')} ${global.styles.secondaryColor(startTime)}`
     );
     console.log(
-      `${global.styles.infoColor('📦 Version        :')} ${global.styles.secondaryColor('v1.0.0')}`
+      `${global.styles.infoColor('📦 Version        :')} ${global.styles.secondaryColor(`v${packageJson.version}`)}`
     );
     console.log(
       `${global.styles.infoColor('🔧 Node.js        :')} ${global.styles.highlightColor(process.version)}`

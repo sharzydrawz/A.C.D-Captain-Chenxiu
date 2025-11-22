@@ -101,13 +101,13 @@ module.exports = {
         })
         .setDescription(
           `🔍 Found ${tracks.length} results from ${getSourceEmoji(source)} ${getSourceName(source)}\n\n` +
-            tracks
-              .map(
-                (track, index) =>
-                  `**${index + 1}.** [${track.info.title}](${track.info.uri})\n` +
-                  `${getSourceEmoji(source)} \`${track.info.author}\` • ⌛ \`${formatTime(track.info.duration)}\``
-              )
-              .join('\n\n')
+          tracks
+            .map(
+              (track, index) =>
+                `**${index + 1}.** [${track.info.title}](${track.info.uri})\n` +
+                `${getSourceEmoji(source)} \`${track.info.author}\` • ⌛ \`${formatTime(track.info.duration)}\``
+            )
+            .join('\n\n')
         )
         .setThumbnail(tracks[0].info.artworkUrl)
         .addFields({
@@ -198,12 +198,19 @@ module.exports = {
         }
       });
 
-      collector.on('end', (collected, reason) => {
+      collector.on('end', async (collected, reason) => {
         if (reason === 'time') {
-          interaction.editReply({
-            content: '⏱️ Search timed out. Please try again.',
-            components: [],
-          });
+          try {
+            await interaction.editReply({
+              content: '⏱️ Search timed out. Please try again.',
+              components: [],
+            });
+          } catch (error) {
+            // Interaction might have been deleted, ignore
+            if (error.code !== 10008) {
+              console.error('Error updating search timeout message:', error);
+            }
+          }
         }
       });
     } catch (error) {

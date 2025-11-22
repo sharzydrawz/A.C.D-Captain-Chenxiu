@@ -273,9 +273,16 @@ module.exports = {
       });
 
       collector.on('end', async () => {
-        const disabledMenu = selectMenu.setDisabled(true);
-        const disabledRow = new ActionRowBuilder().addComponents(disabledMenu);
-        await interaction.editReply({ components: [disabledRow] });
+        try {
+          const disabledMenu = selectMenu.setDisabled(true);
+          const disabledRow = new ActionRowBuilder().addComponents(disabledMenu);
+          await interaction.editReply({ components: [disabledRow] });
+        } catch (error) {
+          // Interaction might have been deleted, ignore
+          if (error.code !== 10008) {
+            console.error('Error disabling help menu:', error);
+          }
+        }
       });
     }
   },

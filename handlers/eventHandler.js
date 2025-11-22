@@ -17,31 +17,66 @@ module.exports = (client) => {
           const lavalinkFiles = fs.readdirSync(filePath);
           lavalinkFiles.forEach((lavalinkFile) => {
             if (lavalinkFile.endsWith('.js')) {
-              const event = require(path.join(filePath, lavalinkFile));
+              try {
+                const event = require(path.join(filePath, lavalinkFile));
 
-              if (event.isNodeEvent) {
-                client.lavalink.nodeManager.on(event.name, (...args) =>
-                  event.execute(client, ...args)
-                );
-              } else {
-                client.lavalink.on(event.name, (...args) =>
-                  event.execute(client, ...args)
+                if (!event.name) {
+                  console.warn(
+                    global.styles.warningColor(
+                      `⚠️  Lavalink event ${lavalinkFile} is missing 'name' property`
+                    )
+                  );
+                  return;
+                }
+
+                if (event.isNodeEvent) {
+                  client.lavalink.nodeManager.on(event.name, (...args) =>
+                    event.execute(client, ...args)
+                  );
+                } else {
+                  client.lavalink.on(event.name, (...args) =>
+                    event.execute(client, ...args)
+                  );
+                }
+                count++;
+              } catch (error) {
+                console.error(
+                  global.styles.errorColor(
+                    `❌ Error loading lavalink event ${lavalinkFile}: ${error.message}`
+                  )
                 );
               }
-              count++;
             }
           });
         } else {
           loadEvents(filePath);
         }
       } else if (file.endsWith('.js')) {
-        const event = require(filePath);
-        if (event.once) {
-          client.once(event.name, (...args) => event.execute(...args));
-        } else {
-          client.on(event.name, (...args) => event.execute(...args));
+        try {
+          const event = require(filePath);
+
+          if (!event.name) {
+            console.warn(
+              global.styles.warningColor(
+                `⚠️  Event ${file} is missing 'name' property`
+              )
+            );
+            return;
+          }
+
+          if (event.once) {
+            client.once(event.name, (...args) => event.execute(...args));
+          } else {
+            client.on(event.name, (...args) => event.execute(...args));
+          }
+          count++;
+        } catch (error) {
+          console.error(
+            global.styles.errorColor(
+              `❌ Error loading event ${file}: ${error.message}`
+            )
+          );
         }
-        count++;
       }
     });
   };
