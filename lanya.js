@@ -142,3 +142,5 @@ process.on('SIGTERM', async () => {
     process.exit(1);
   }
 });
+
+client.login(process.env.DISCORD_TOKEN);
