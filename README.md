@@ -4,9 +4,12 @@
   <br>
   <p><strong>An open-source Discord bot designed to enhance community interaction with a variety of engaging and useful features.</strong></p>
   
-  [![Discord](https://img.shields.io/discord/1342840214573416458?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/kAYpdenZ8b)
-  [![License](https://img.shields.io/github/license/gaurav87565/Lanya-2.0)](LICENSE)
-  [![Stars](https://img.shields.io/github/stars/gaurav87565/Lanya-2.0?style=social)](https://github.com/gaurav87565/Lanya-2.0/stargazers)
+  [![Discord](https://img.shields.io/discord/1342840214573416458?color=5865F2&logo=discord&logoColor=white)](https://discord.gg/DJU8TuFaYa)
+  [![License](https://img.shields.io/github/license/birajrai/lanya-remastered)](LICENSE)
+  [![Stars](https://img.shields.io/github/stars/birajrai/lanya-remastered?style=social)](https://github.com/birajrai/lanya-remastered/stargazers)
+  
+  <br>
+  <p>Official Fork of <a href="https://github.com/birajrai/lanya">birajrai/lanya</a> & <a href="https://github.com/gaurav87565/Lanya-2.0">gaurav87565/Lanya-2.0</a></p>
 </div>
 
 ## ✨ About Lanya
@@ -156,8 +159,9 @@ Lanya is a Discord bot built to improve server engagement and provide useful too
 
 For any assistance, feature requests, or bug reports, join our official support server:
 
-  <a href="https://discord.gg/kAYpdenZ8b" target="_blank">
+  <a href="https://discord.gg/DJU8TuFaYa" target="_blank">
     <img src="https://img.shields.io/static/v1?message=Discord&logo=discord&label=&color=7289DA&logoColor=white&labelColor=&style=for-the-badge" height="35" alt="discord logo"  />
+  </a>
 
 ## 🔧 Quick Setup
 
@@ -173,8 +177,8 @@ For any assistance, feature requests, or bug reports, join our official support 
 1. **Clone the Repository**
 
 ```bash
-git clone https://github.com/gaurav87565/Lanya-2.0.git
-cd Lanya
+git clone https://github.com/birajrai/lanya-remastered.git
+cd lanya-remastered
 ```
 
 2. **Install Dependencies**
@@ -207,7 +211,7 @@ npm run start:prod
 ## 🧩 Project Structure
 
 ```
-Lanya/
+lanya-remastered/
 ├── commands/           # Command files organized by category
 ├── events/             # Event handler files
 ├── models/             # Database models
@@ -271,7 +275,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [ ] Music playback capabilities
 - [ ] Role reaction system
 
-Have suggestions? Feel free to share them in our [Support Server](https://discord.gg/kAYpdenZ8b)!
+Have suggestions? Feel free to share them in our [Support Server](https://discord.gg/DJU8TuFaYa)!
 
 ---
 
