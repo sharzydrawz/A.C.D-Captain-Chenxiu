@@ -33,7 +33,7 @@ client.lavalink = new LavalinkManager({
       authorization: process.env.LL_PASSWORD,
       host: process.env.LL_HOST,
       port: parseInt(process.env.LL_PORT, 10),
-      secure: process.env.LL_SECURE === 'false',
+      secure: process.env.LL_SECURE === 'true',
       id: process.env.LL_NAME,
     },
   ],
