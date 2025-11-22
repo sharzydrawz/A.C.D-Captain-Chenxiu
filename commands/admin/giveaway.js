@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { SlashCommandBuilder } = require('discord.js');
 const startGiveaway = require('../../functions/startGiveaway');
 const endGiveaway = require('../../functions/endGiveaway');
 const rerollGiveaway = require('../../functions/rerollGiveaway');
