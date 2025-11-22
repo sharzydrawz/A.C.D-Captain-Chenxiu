@@ -7,6 +7,29 @@ const path = require('path');
 const chalk = require('chalk');
 const { autoPlayFunction } = require('./functions/autoPlay');
 
+// Validate required environment variables
+const requiredEnvVars = [
+  'DISCORD_TOKEN',
+  'DISCORD_CLIENT_ID',
+  'MONGODB_URI',
+  'LL_HOST',
+  'LL_PORT',
+  'LL_PASSWORD',
+];
+
+const missingEnvVars = requiredEnvVars.filter((varName) => !process.env[varName]);
+
+if (missingEnvVars.length > 0) {
+  console.error(chalk.red('❌ Missing required environment variables:'));
+  missingEnvVars.forEach((varName) => {
+    console.error(chalk.red(`   - ${varName}`));
+  });
+  console.error(chalk.yellow('\n⚠️  Please check your .env file and ensure all required variables are set.'));
+  console.error(chalk.yellow('   Refer to .env.example for the required variables.\n'));
+  process.exit(1);
+}
+
+
 const app = express();
 
 app.get('/', (req, res) => {
