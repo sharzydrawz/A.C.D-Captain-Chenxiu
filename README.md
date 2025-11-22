@@ -265,20 +265,10 @@ We strive to maintain a friendly, inclusive, and respectful community. Please fo
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📋 Roadmap
-
-- [ ] Server logs system
-- [ ] Advanced auto-moderation features
-- [ ] Custom command creation interface
-- [ ] Web dashboard for easy configuration
-- [ ] Enhanced Minecraft integration features
-- [ ] Music playback capabilities
-- [ ] Role reaction system
-
 Have suggestions? Feel free to share them in our [Support Server](https://discord.gg/DJU8TuFaYa)!
 
 ---
 
 <div align="center">
-  Made with ❤️ by the DaPirates Development Team
+  Made with ❤️ by Lanya Studio
 </div>
