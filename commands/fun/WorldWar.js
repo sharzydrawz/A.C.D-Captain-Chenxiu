@@ -8,7 +8,7 @@ const {
 } = require('discord.js');
 const WorldWar = require('../../models/WorldWar');
 const path = require('path');
-const Canvas = require('canvas');
+const Canvas = require('@napi-rs/canvas');
 const sharp = require('sharp');
 const fetch = require('node-fetch');
 
@@ -117,11 +117,11 @@ async function setupGame(interaction) {
     .setTitle(`🌎 WorldWar #${warNumber}`)
     .setDescription(
       `> An epic battle is about to begin! Warriors from across the realm are gathering for the ultimate showdown.\n\n` +
-        `⚔️ **Battle Requirements**\n` +
-        `• Minimum Warriors: ${min}\n` +
-        `• Maximum Warriors: ${max}\n\n` +
-        `🎮 **Join the Battle!**\n` +
-        `Click below to enter the battlefield!`
+      `⚔️ **Battle Requirements**\n` +
+      `• Minimum Warriors: ${min}\n` +
+      `• Maximum Warriors: ${max}\n\n` +
+      `🎮 **Join the Battle!**\n` +
+      `Click below to enter the battlefield!`
     )
     .setColor('#FF4444')
     .setTimestamp();
@@ -380,7 +380,7 @@ async function displayWinner(
     .setTitle(`👑 Champion of WorldWar #${warNumber}`)
     .setDescription(
       `> The dust settles... A lone warrior stands victorious!\n\n` +
-        `🏆 **CHAMPION: <@${winner}>**`
+      `🏆 **CHAMPION: <@${winner}>**`
     )
     .setImage('attachment://winner.png')
     .setColor('#FFD700')
