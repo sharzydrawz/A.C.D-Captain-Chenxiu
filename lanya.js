@@ -36,9 +36,17 @@ app.get('/', (req, res) => {
   res.send('Everything is up!');
 });
 
-app.listen(10000, () => {
+const server = app.listen(10000, () => {
   console.log('✅ Express server running on http://localhost:10000');
 });
+
+// Handle Express server errors
+server.on('error', (error) => {
+  console.error(chalk.red('❌ Express server error:'), error);
+});
+
+// Store server reference for graceful shutdown
+global.expressServer = server;
 
 
 const client = new Client({
@@ -107,4 +115,30 @@ for (const file of handlerFiles) {
 console.log(
   global.styles.successColor(`✅ Successfully loaded ${counter} handlers`)
 );
-client.login(process.env.DISCORD_TOKEN);
+process.on('SIGINT', async () => {
+  console.log(global.styles.warningColor('⚠️ Received SIGINT, shutting down...'));
+  try {
+    if (global.expressServer) await global.expressServer.close();
+    await client.destroy();
+    if (client.lavalink) await client.lavalink.destroy();
+    console.log(global.styles.successColor('✅ Graceful shutdown complete.'));
+    process.exit(0);
+  } catch (err) {
+    console.error(global.styles.errorColor('❌ Error during shutdown:'), err);
+    process.exit(1);
+  }
+});
+
+process.on('SIGTERM', async () => {
+  console.log(global.styles.warningColor('⚠️ Received SIGTERM, shutting down...'));
+  try {
+    if (global.expressServer) await global.expressServer.close();
+    await client.destroy();
+    if (client.lavalink) await client.lavalink.destroy();
+    console.log(global.styles.successColor('✅ Graceful shutdown complete.'));
+    process.exit(0);
+  } catch (err) {
+    console.error(global.styles.errorColor('❌ Error during shutdown:'), err);
+    process.exit(1);
+  }
+});
