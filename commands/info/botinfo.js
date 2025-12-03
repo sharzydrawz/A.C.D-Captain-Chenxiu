@@ -37,7 +37,7 @@ module.exports = {
       .addFields(
         {
           name: 'Developer',
-          value: '```elm\nGaurav & Neppixel\n```',
+          value: '```elm\nShaz\n```',
           inline: true,
         },
         {
@@ -96,8 +96,8 @@ module.exports = {
       .setTimestamp();
 
     const sourceCodeButton = new ButtonBuilder()
-      .setLabel('Source Code')
-      .setURL('https://github.com/birajrai/lanya-remastered')
+      .setLabel('Shaz comm info')
+      .setURL('https://shazzycomms.uwu.ai/')
       .setStyle(ButtonStyle.Link);
 
     const row = new ActionRowBuilder().addComponents(sourceCodeButton);
